@@ -26,6 +26,7 @@ export interface Session {
   tools: string[];
   jtbd: string | null;
   jtbdDetail: string;
+  ownPromise: string;
   connected: string[];
   firstConnectedAt: number | null;
   /** The three things the user tells the Brain themselves. */
@@ -44,6 +45,7 @@ export const EMPTY_SESSION: Session = {
   tools: [],
   jtbd: null,
   jtbdDetail: "",
+  ownPromise: "",
   connected: [],
   firstConnectedAt: null,
   context: {},

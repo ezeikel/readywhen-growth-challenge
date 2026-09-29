@@ -113,6 +113,13 @@ export function AppShell({
  *  onboarding card on /welcome — one component, so the backdrop can never drift
  *  from the board it is standing in for. */
 export function Board() {
+  const { session } = useSession();
+  const own = session.ownPromise.trim();
+  const rows = [
+    ...(own === "" ? [] : [{ key: "own", title: own, due: "you added this" }]),
+    ...FOUND_COMMITMENTS.map((item) => ({ key: item.title, title: item.title, due: item.due })),
+  ];
+
   return (
     <div className="flex flex-col gap-5 p-8">
       <div className="flex items-center justify-between">
@@ -129,8 +136,8 @@ export function Board() {
         </div>
       </div>
       <ul className="border-border divide-border bg-card divide-y overflow-hidden rounded-xl border shadow-xs">
-        {FOUND_COMMITMENTS.map((item) => (
-          <li key={item.title} className="flex items-center gap-3 px-4 py-3.5">
+        {rows.map((item) => (
+          <li key={item.key} className="flex items-center gap-3 px-4 py-3.5">
             <span className="border-input size-4 shrink-0 rounded border-2" aria-hidden />
             <span className="flex-1 text-sm font-medium">{item.title}</span>
             <span className="text-muted-foreground text-xs">{item.due}</span>
