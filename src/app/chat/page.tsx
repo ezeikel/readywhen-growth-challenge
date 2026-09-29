@@ -17,6 +17,8 @@ import {
   openingLine,
   type Tool,
 } from "@/lib/content";
+import { durationBucket, recordOnce } from "@/lib/funnel-events";
+import { recordBusinessEvent } from "@/lib/metrics";
 import { useSession } from "@/lib/session";
 
 /** Said once, the first time a source is connected. */
@@ -39,10 +41,33 @@ export default function ChatPage() {
   const [sent, setSent] = useState(false);
   const [replyIndex, setReplyIndex] = useState(0);
   const bottom = useRef<HTMLDivElement>(null);
+  const connectSeenAt = useRef<number | null>(null);
+  const consentOpenedAt = useRef<number | null>(null);
+  const connectLastAction = useRef("none");
+  const connectLeft = useRef(false);
+  const connectedCount = useRef(0);
+  connectedCount.current = session.connected.length;
 
   useEffect(() => {
     if (ready && !session.signedIn) router.replace("/signup");
   }, [ready, session.signedIn, router]);
+
+  useEffect(() => {
+    if (!ready || !session.signedIn) return;
+    recordOnce("chat.viewed", "chat.viewed");
+    const onPageHide = () => {
+      if (connectLeft.current || connectedCount.current > 0) return;
+      connectLeft.current = true;
+      const seenAt = connectSeenAt.current;
+      recordBusinessEvent("chat.connect_left", {
+        duration_bucket: durationBucket(seenAt === null ? 0 : Date.now() - seenAt),
+        last_action: connectLastAction.current,
+        saw_card: seenAt === null ? 0 : 1,
+      });
+    };
+    window.addEventListener("pagehide", onPageHide);
+    return () => window.removeEventListener("pagehide", onPageHide);
+  }, [ready, session.signedIn]);
 
   // The agent opens the conversation, then offers the connect card a beat later.
   // Deliberately idempotent rather than ref-guarded: React's dev StrictMode runs
@@ -51,7 +76,12 @@ export default function ChatPage() {
   useEffect(() => {
     if (!ready || !session.signedIn) return;
     setMessages([{ kind: "agent", text: openingLine(session.jtbd, session.firstName) }]);
-    const timer = setTimeout(() => setMessages((prev) => [...prev, { kind: "connect" }]), 700);
+    const timer = setTimeout(() => {
+      setMessages((prev) => [...prev, { kind: "connect" }]);
+      if (connectSeenAt.current === null) connectSeenAt.current = Date.now();
+      if (connectLastAction.current === "none") connectLastAction.current = "card_seen";
+      recordOnce("chat.connect_card_viewed", "chat.connect_card_viewed");
+    }, 700);
     return () => clearTimeout(timer);
   }, [ready, session.signedIn, session.jtbd, session.firstName]);
 
@@ -71,8 +101,20 @@ export default function ChatPage() {
     // stop being empty rooms. Read before the update, or every connection
     // announces the unlock again.
     const first = session.connected.length === 0;
+    const decidedIn = connectSeenAt.current === null ? 0 : Date.now() - connectSeenAt.current;
     setPending(null);
-    update({ connected: [...session.connected, tool.slug] });
+    if (first) connectLeft.current = true;
+    update({
+      connected: [...session.connected, tool.slug],
+      firstConnectedAt: first ? Date.now() : session.firstConnectedAt,
+    });
+    recordBusinessEvent("connector.connected", {
+      slug: tool.slug,
+      surface: "chat",
+      is_first: first ? 1 : 0,
+      connected_count: session.connected.length + 1,
+      duration_bucket: durationBucket(decidedIn),
+    });
     say({
       kind: "agent",
       text: `${tool.name} connected. Give me a second while I read the last 30 days…`,
@@ -89,10 +131,12 @@ export default function ChatPage() {
   }
 
   function send(text: string) {
-    if (!text.trim()) return;
+    const trimmed = text.trim();
+    if (!trimmed) return;
     setInput("");
-    say({ kind: "user", text: text.trim() });
-    const wantsDraft = /draft|reply|invoice|tom/i.test(text);
+    const wantsDraft = /draft|reply|invoice|tom/i.test(trimmed);
+    recordBusinessEvent("chat.message_sent", { intent: wantsDraft ? "draft" : "other" });
+    say({ kind: "user", text: trimmed });
     setTimeout(() => {
       if (wantsDraft) {
         say({ kind: "agent", text: "On it. Here's the draft, in your voice." }, { kind: "draft" });
@@ -130,7 +174,15 @@ export default function ChatPage() {
                   </div>
                 )}
                 {message.kind === "connect" && (
-                  <ConnectCard onPick={setPending} connected={session.connected} />
+                  <ConnectCard
+                    onPick={(tool) => {
+                      consentOpenedAt.current = Date.now();
+                      connectLastAction.current = "picked";
+                      recordBusinessEvent("connector.picked", { slug: tool.slug, surface: "chat" });
+                      setPending(tool);
+                    }}
+                    connected={session.connected}
+                  />
                 )}
                 {message.kind === "commitments" && <CommitmentsCard onAsk={send} />}
                 {message.kind === "draft" && (
@@ -138,6 +190,7 @@ export default function ChatPage() {
                     sent={sent}
                     onSend={() => {
                       setSent(true);
+                      recordBusinessEvent("draft.approved", { surface: "chat" });
                       say({
                         kind: "agent",
                         text: "Sent. I'll watch for Tom's reply and close the loop when it lands.",
@@ -190,7 +243,16 @@ export default function ChatPage() {
       {pending && (
         <ConsentDialog
           tool={pending}
-          onCancel={() => setPending(null)}
+          onCancel={() => {
+            const openFor = consentOpenedAt.current === null ? 0 : Date.now() - consentOpenedAt.current;
+            connectLastAction.current = "consent_cancelled";
+            recordBusinessEvent("connector.consent_cancelled", {
+              slug: pending.slug,
+              surface: "chat",
+              duration_bucket: durationBucket(openFor),
+            });
+            setPending(null);
+          }}
           onAllow={() => grantConsent(pending)}
         />
       )}

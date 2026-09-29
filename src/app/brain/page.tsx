@@ -24,6 +24,8 @@ import {
   QUESTIONS,
   WORKING_DAYS_TO_UNLOCK,
 } from "@/lib/content";
+import { recordOnce } from "@/lib/funnel-events";
+import { recordBusinessEvent } from "@/lib/metrics";
 import { isUnlocked, useSession } from "@/lib/session";
 import { cn } from "@/helpers/utils";
 
@@ -44,8 +46,17 @@ export default function BrainPage() {
 
   useEffect(() => {
     if (!ready) return;
-    if (!session.signedIn) router.replace("/signup");
-    else if (!isUnlocked(session)) router.replace("/chat");
+    if (!session.signedIn) {
+      recordOnce("brain.bounced.signed_out", "brain.bounced", { reason: "signed_out" });
+      router.replace("/signup");
+      return;
+    }
+    if (!isUnlocked(session)) {
+      recordOnce("brain.bounced.not_connected", "brain.bounced", { reason: "not_connected" });
+      router.replace("/chat");
+      return;
+    }
+    recordOnce("brain.viewed", "brain.viewed", { connected_count: session.connected.length });
   }, [ready, session, router]);
 
   useEffect(() => {
@@ -105,6 +116,8 @@ export default function BrainPage() {
                 onClick={() => {
                   update({ context: answers });
                   setSaved(true);
+                  const answered = QUESTIONS.filter(({ key }) => (answers[key] ?? "").trim() !== "").length;
+                  recordBusinessEvent("brain.context_saved", { answered_count: answered });
                 }}
               >
                 Save
@@ -142,7 +155,15 @@ export default function BrainPage() {
                   <button
                     type="button"
                     disabled={on}
-                    onClick={() => update({ connected: [...session.connected, tool.slug] })}
+                    onClick={() => {
+                      update({ connected: [...session.connected, tool.slug] });
+                      recordBusinessEvent("connector.connected", {
+                        slug: tool.slug,
+                        surface: "brain",
+                        is_first: 0,
+                        connected_count: session.connected.length + 1,
+                      });
+                    }}
                     className={cn(
                       "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition",
                       on

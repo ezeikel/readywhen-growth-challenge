@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowRight, Check, FileText } from "lucide-react";
 
 import { cn } from "@/helpers/utils";
@@ -10,6 +10,8 @@ import { SurveySelect } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Readywhen } from "@/components/ui/readywhen";
 import { EXPLAINER_SCREENS, JTBD_OPTIONS, SURVEY_FIELDS, WORK_TOOLS } from "@/lib/content";
+import { recordOnce, useStepTiming } from "@/lib/funnel-events";
+import { recordBusinessEvent } from "@/lib/metrics";
 
 function StepHeader({ title, sub }: Readonly<{ title: string; sub?: ReactNode }>) {
   return (
@@ -48,7 +50,9 @@ export function OrgNameStep({
   domain,
   onContinue,
 }: Readonly<{ domain: string | null; onContinue: (name: string) => void }>) {
-  const [name, setName] = useState(() => suggestOrgName(domain));
+  const seeded = suggestOrgName(domain);
+  const [name, setName] = useState(seeded);
+  const timing = useStepTiming("org");
 
   return (
     <form
@@ -56,7 +60,13 @@ export function OrgNameStep({
       style={{ gap: "2.5rem" }}
       onSubmit={(event) => {
         event.preventDefault();
-        if (name.trim()) onContinue(name.trim());
+        const trimmed = name.trim();
+        if (!trimmed) return;
+        timing.complete({
+          was_seeded: seeded === "" ? 0 : 1,
+          kept_suggestion: seeded !== "" && trimmed === seeded ? 1 : 0,
+        });
+        onContinue(trimmed);
       }}
     >
       <StepHeader title="Name your organisation." sub="You can rename it anytime." />
@@ -65,7 +75,19 @@ export function OrgNameStep({
         <Input
           autoFocus
           value={name}
-          onChange={(event) => setName(event.target.value)}
+          onChange={(event) => {
+            const next = event.target.value;
+            if (name === "" && next !== "") {
+              timing.mark("name_edited");
+              recordOnce("welcome.detail.org.name", "welcome.detail_recorded", {
+                step: "org",
+                field: "name",
+              });
+            } else if (next !== seeded) {
+              timing.mark("name_edited");
+            }
+            setName(next);
+          }}
           onFocus={(event) => event.currentTarget.select()}
           placeholder="e.g. Acme Inc"
           aria-label="Organisation name"
@@ -94,9 +116,18 @@ export function ProfileStep({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [survey, setSurvey] = useState<Record<string, string>>({});
+  const timing = useStepTiming("profile");
 
   const complete =
     firstName.trim() !== "" && SURVEY_FIELDS.every((field) => (survey[field.key] ?? "") !== "");
+
+  const noteField = (field: string) => {
+    timing.mark(field);
+    recordOnce(`welcome.detail.profile.${field}`, "welcome.detail_recorded", {
+      step: "profile",
+      field,
+    });
+  };
 
   return (
     <form
@@ -105,6 +136,9 @@ export function ProfileStep({
       onSubmit={(event) => {
         event.preventDefault();
         if (complete) {
+          timing.complete({
+            survey_answered: SURVEY_FIELDS.filter((field) => (survey[field.key] ?? "") !== "").length,
+          });
           onContinue({ firstName: firstName.trim(), lastName: lastName.trim(), survey });
         }
       }}
@@ -123,14 +157,22 @@ export function ProfileStep({
         <div className="flex flex-col gap-3 sm:flex-row">
           <Input
             value={firstName}
-            onChange={(event) => setFirstName(event.target.value)}
+            onChange={(event) => {
+              const next = event.target.value;
+              if (firstName === "" && next !== "") noteField("first_name");
+              setFirstName(next);
+            }}
             placeholder="First name"
             aria-label="First name"
             autoComplete="given-name"
           />
           <Input
             value={lastName}
-            onChange={(event) => setLastName(event.target.value)}
+            onChange={(event) => {
+              const next = event.target.value;
+              if (lastName === "" && next !== "") noteField("last_name");
+              setLastName(next);
+            }}
             placeholder="Last name"
             aria-label="Last name"
             autoComplete="family-name"
@@ -148,7 +190,10 @@ export function ProfileStep({
             label={field.label}
             options={field.options}
             value={survey[field.key] ?? ""}
-            onChange={(value) => setSurvey((prev) => ({ ...prev, [field.key]: value }))}
+            onChange={(value) => {
+              noteField(`survey_${field.key}`);
+              setSurvey((prev) => ({ ...prev, [field.key]: value }));
+            }}
           />
         ))}
       </fieldset>
@@ -168,6 +213,17 @@ export function ExplainerStep({ onContinue }: Readonly<{ onContinue: () => void 
   const [index, setIndex] = useState(0);
   const screen = EXPLAINER_SCREENS[index];
   const isLast = index === EXPLAINER_SCREENS.length - 1;
+  const timing = useStepTiming("explainer");
+  const screensSeen = useRef(new Set<string>());
+
+  useEffect(() => {
+    screensSeen.current.add(screen.id);
+    timing.mark(screen.id);
+    recordOnce(`welcome.detail.explainer.${screen.id}`, "welcome.detail_recorded", {
+      step: "explainer",
+      field: screen.id,
+    });
+  }, [screen.id, timing.mark]);
 
   return (
     <div className="flex w-full flex-col gap-7">
@@ -209,7 +265,14 @@ export function ExplainerStep({ onContinue }: Readonly<{ onContinue: () => void 
         <Button
           type="button"
           variant="brand"
-          onClick={() => (isLast ? onContinue() : setIndex(index + 1))}
+          onClick={() => {
+            if (!isLast) {
+              setIndex(index + 1);
+              return;
+            }
+            timing.complete({ screens_seen: screensSeen.current.size });
+            onContinue();
+          }}
           className="group"
         >
           {screen.cta}
@@ -371,6 +434,8 @@ export function ToolsStep({
   onContinue: () => void;
   onBack: () => void;
 }>) {
+  const timing = useStepTiming("tools");
+
   return (
     <div className="flex w-full flex-col gap-8">
       <StepHeader
@@ -393,7 +458,14 @@ export function ToolsStep({
                 type="button"
                 aria-pressed={on}
                 aria-label={`${tool.name}${on ? " — selected" : ""}`}
-                onClick={() => onToggle(tool.slug)}
+                onClick={() => {
+                  timing.mark("toggled");
+                  recordBusinessEvent("welcome.tool_toggled", {
+                    slug: tool.slug,
+                    selected: on ? 0 : 1,
+                  });
+                  onToggle(tool.slug);
+                }}
                 className={cn(
                   "focus-visible:ring-ring relative flex w-full items-center justify-between gap-2.5 rounded-xl border px-3.5 py-3 text-left transition focus:outline-none focus-visible:ring-2",
                   on
@@ -427,14 +499,41 @@ export function ToolsStep({
         <span className="text-muted-foreground text-xs font-medium">Use something else?</span>
         <Input
           value={other}
-          onChange={(event) => onOtherChange(event.target.value)}
+          onChange={(event) => {
+            const next = event.target.value;
+            if (other === "" && next !== "") {
+              timing.mark("other_typed");
+              recordOnce("welcome.detail.tools.other", "welcome.detail_recorded", {
+                step: "tools",
+                field: "other",
+              });
+            }
+            onOtherChange(next);
+          }}
           placeholder="Add a tool, e.g. Linear, Intercom, Zoom"
           aria-label="Other tools you use"
         />
       </label>
 
-      <Footer onBack={onBack}>
-        <Button type="button" onClick={onContinue} className="group">
+      <Footer
+        onBack={() => {
+          recordBusinessEvent("welcome.step_back", { step: "tools" });
+          onBack();
+        }}
+      >
+        <Button
+          type="button"
+          onClick={() => {
+            timing.complete({
+              selected_count: selected.length + (other.trim() === "" ? 0 : 1),
+              used_other: other.trim() === "" ? 0 : 1,
+              included_gmail: selected.includes("gmail") ? 1 : 0,
+              included_calendar: selected.includes("calendar") ? 1 : 0,
+            });
+            onContinue();
+          }}
+          className="group"
+        >
           Continue
           <ArrowRight className="transition-transform group-hover:translate-x-0.5" aria-hidden />
         </Button>
@@ -459,6 +558,8 @@ export function SlipsStep({
   onContinue: () => void;
   onBack: () => void;
 }>) {
+  const timing = useStepTiming("slips");
+
   return (
     <div className="flex w-full flex-col gap-8">
       <StepHeader
@@ -483,7 +584,11 @@ export function SlipsStep({
                 type="button"
                 role="radio"
                 aria-checked={on}
-                onClick={() => onSelect(option.slug)}
+                onClick={() => {
+                  timing.mark("selected");
+                  recordBusinessEvent("welcome.jtbd_selected", { jtbd: option.slug });
+                  onSelect(option.slug);
+                }}
                 className={cn(
                   "focus-visible:ring-ring flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition focus:outline-none focus-visible:ring-2",
                   on
@@ -514,14 +619,40 @@ export function SlipsStep({
         <Textarea
           rows={2}
           value={detail}
-          onChange={(event) => onDetailChange(event.target.value)}
+          onChange={(event) => {
+            const next = event.target.value;
+            if (detail === "" && next !== "") {
+              timing.mark("detail_typed");
+              recordOnce("welcome.detail.slips.detail", "welcome.detail_recorded", {
+                step: "slips",
+                field: "detail",
+              });
+            }
+            onDetailChange(next);
+          }}
           placeholder="e.g. I keep forgetting to follow up after prospect calls"
           aria-label="Anything specific that keeps slipping"
         />
       </label>
 
-      <Footer onBack={onBack}>
-        <Button type="button" onClick={onContinue} disabled={!selected} className="group">
+      <Footer
+        onBack={() => {
+          recordBusinessEvent("welcome.step_back", { step: "slips" });
+          onBack();
+        }}
+      >
+        <Button
+          type="button"
+          onClick={() => {
+            timing.complete({
+              jtbd: selected ?? "none",
+              has_detail: detail.trim() === "" ? 0 : 1,
+            });
+            onContinue();
+          }}
+          disabled={!selected}
+          className="group"
+        >
           Continue
           <ArrowRight className="transition-transform group-hover:translate-x-0.5" aria-hidden />
         </Button>

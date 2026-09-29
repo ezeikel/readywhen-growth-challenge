@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { RotateCcw } from "lucide-react";
 
+import { resetFunnelMemory } from "@/lib/funnel-events";
 import { useSession } from "@/lib/session";
 
 /**
@@ -31,6 +32,7 @@ export function StartOver() {
       type="button"
       onClick={() => {
         reset();
+        resetFunnelMemory();
         router.push("/signup");
       }}
       className="bg-surface-inverse text-surface-inverse-foreground fixed right-4 bottom-20 z-60 flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-medium shadow-lg ring-1 ring-black/10 transition hover:opacity-90 md:right-5 md:bottom-5"

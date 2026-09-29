@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { AppShell, Board } from "@/components/AppShell";
+import { recordOnce, sinceConnectBucket } from "@/lib/funnel-events";
 import { isUnlocked, useSession } from "@/lib/session";
 
 /** The board, once there is something to put on it. Locked until a source is
@@ -14,8 +15,20 @@ export default function InboxPage() {
 
   useEffect(() => {
     if (!ready) return;
-    if (!session.signedIn) router.replace("/signup");
-    else if (!isUnlocked(session)) router.replace("/chat");
+    if (!session.signedIn) {
+      recordOnce("inbox.bounced.signed_out", "inbox.bounced", { reason: "signed_out" });
+      router.replace("/signup");
+      return;
+    }
+    if (!isUnlocked(session)) {
+      recordOnce("inbox.bounced.not_connected", "inbox.bounced", { reason: "not_connected" });
+      router.replace("/chat");
+      return;
+    }
+    recordOnce("inbox.viewed", "inbox.viewed", {
+      connected_count: session.connected.length,
+      since_connect_bucket: sinceConnectBucket(session.firstConnectedAt),
+    });
   }, [ready, session, router]);
 
   if (!ready || !session.signedIn || !isUnlocked(session)) return null;

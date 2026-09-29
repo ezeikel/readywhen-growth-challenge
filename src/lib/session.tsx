@@ -27,6 +27,7 @@ export interface Session {
   jtbd: string | null;
   jtbdDetail: string;
   connected: string[];
+  firstConnectedAt: number | null;
   /** The three things the user tells the Brain themselves. */
   context: Record<string, string>;
   brainSeen: boolean;
@@ -44,6 +45,7 @@ export const EMPTY_SESSION: Session = {
   jtbd: null,
   jtbdDetail: "",
   connected: [],
+  firstConnectedAt: null,
   context: {},
   brainSeen: false,
 };
