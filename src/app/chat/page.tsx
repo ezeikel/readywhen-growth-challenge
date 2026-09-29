@@ -14,7 +14,10 @@ import {
   CONNECTORS,
   DRAFT_REPLY,
   FOUND_COMMITMENTS,
+  connectAsk,
+  consentLines,
   openingLine,
+  recommendedConnector,
   type Tool,
 } from "@/lib/content";
 import { durationBucket, recordOnce } from "@/lib/funnel-events";
@@ -175,6 +178,7 @@ export default function ChatPage() {
                 )}
                 {message.kind === "connect" && (
                   <ConnectCard
+                    jtbd={session.jtbd}
                     onPick={(tool) => {
                       consentOpenedAt.current = Date.now();
                       connectLastAction.current = "picked";
@@ -265,7 +269,17 @@ const AGENT_INDENT = "ml-[4.6rem]";
 function ConnectCard({
   onPick,
   connected,
-}: Readonly<{ onPick: (tool: Tool) => void; connected: string[] }>) {
+  jtbd,
+}: Readonly<{ onPick: (tool: Tool) => void; connected: string[]; jtbd: string | null }>) {
+  const [showOthers, setShowOthers] = useState(false);
+  const recommended = recommendedConnector(jtbd);
+  const recommendedOn = connected.includes(recommended.slug);
+  const ask = connectAsk(recommended, jtbd);
+  const list =
+    recommendedOn || showOthers
+      ? CONNECTORS.filter((tool) => tool.slug !== recommended.slug)
+      : [];
+
   return (
     <div
       className={cn(
@@ -273,34 +287,60 @@ function ConnectCard({
         "bg-card flex max-w-md flex-col gap-3 rounded-xl border p-4 shadow-xs",
       )}
     >
-      <p className="text-sm font-medium">Connect where your work happens</p>
-      <p className="text-muted-foreground text-xs">
-        I only read what I need to find your commitments.
-      </p>
-      <ul className="flex flex-col gap-2">
-        {CONNECTORS.map((tool) => {
-          const on = connected.includes(tool.slug);
-          return (
-            <li key={tool.slug}>
-              <button
-                type="button"
-                disabled={on}
-                onClick={() => onPick(tool)}
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition",
-                  on ? "border-brand bg-brand/5" : "border-input hover:bg-accent shadow-xs",
-                )}
-              >
-                <img src={tool.iconSrc} alt="" className="size-5 shrink-0 object-contain" />
-                <span className="flex-1 text-sm font-medium">{tool.name}</span>
-                <span className={cn("text-xs", on ? "text-brand font-medium" : "text-muted-foreground")}>
-                  {on ? "Connected" : "Connect"}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      {!recommendedOn && (
+        <>
+          <p className="text-sm font-medium">{ask.title}</p>
+          <p className="text-muted-foreground text-xs leading-relaxed">{ask.body}</p>
+          <Button type="button" variant="brand" className="w-fit" onClick={() => onPick(recommended)}>
+            <img src={recommended.iconSrc} alt="" className="size-4 object-contain" />
+            {ask.button}
+          </Button>
+        </>
+      )}
+
+      {recommendedOn && (
+        <p className="text-sm font-medium">Connect another tool</p>
+      )}
+
+      {list.length > 0 && (
+        <ul className="flex flex-col gap-2">
+          {list.map((tool) => {
+            const on = connected.includes(tool.slug);
+            return (
+              <li key={tool.slug}>
+                <button
+                  type="button"
+                  disabled={on}
+                  onClick={() => onPick(tool)}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition",
+                    on ? "border-brand bg-brand/5" : "border-input hover:bg-accent shadow-xs",
+                  )}
+                >
+                  <img src={tool.iconSrc} alt="" className="size-5 shrink-0 object-contain" />
+                  <span className="flex-1 text-sm font-medium">{tool.name}</span>
+                  <span className={cn("text-xs", on ? "text-brand font-medium" : "text-muted-foreground")}>
+                    {on ? "Connected" : "Connect"}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {!recommendedOn && !showOthers && (
+        <button
+          type="button"
+          className="text-muted-foreground w-fit text-left text-xs underline underline-offset-2"
+          onClick={() => {
+            recordBusinessEvent("connector.others_opened", { recommended: recommended.slug });
+            setShowOthers(true);
+          }}
+        >
+          Use a different tool
+        </button>
+      )}
     </div>
   );
 }
@@ -369,11 +409,7 @@ function ConsentDialog({
   onAllow,
   onCancel,
 }: Readonly<{ tool: Tool; onAllow: () => void; onCancel: () => void }>) {
-  const scopes = [
-    `Read your ${tool.name} messages and metadata`,
-    "Create drafts on your behalf",
-    "See who you exchange messages with",
-  ];
+  const scopes = consentLines(tool);
 
   return (
     <div
@@ -392,7 +428,7 @@ function ConsentDialog({
           <div>
             <p className="text-sm font-semibold">Connect {tool.name}</p>
             <p className="text-muted-foreground text-xs">
-              <ReadywhenName /> wants access to your {tool.name} account
+              Read-only, plus drafts you approve. Disconnect whenever you want.
             </p>
           </div>
         </div>

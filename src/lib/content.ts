@@ -208,6 +208,46 @@ export const CONNECTORS: readonly Tool[] = WORK_TOOLS.filter((tool) =>
   ["gmail", "slack", "calendar", "notion"].includes(tool.slug),
 );
 
+export const recommendedConnector = (jtbd: string | null): Tool => {
+  const slug = jtbd === "work-stuck-waiting-on-someone" ? "calendar" : "gmail";
+  return CONNECTORS.find((tool) => tool.slug === slug) ?? CONNECTORS[0];
+};
+
+const GMAIL_FINDS: Record<string, string> = {
+  "no-time-to-chase-new-business": "the leads that have gone quiet",
+  "things-fall-through-cracks": "the commitments you haven't closed",
+  "juggling-multiple-businesses": "what you still owe across the businesses",
+};
+
+export const connectAsk = (
+  tool: Tool,
+  jtbd: string | null,
+): { title: string; body: string; button: string } => {
+  if (tool.slug === "calendar") {
+    return {
+      title: "Connect Calendar",
+      body: "I'll read the last 30 days of meetings and list what you said you'd do on them. I draft the follow-up. You send it. Nothing goes out on its own.",
+      button: "Connect Calendar",
+    };
+  }
+
+  const found = GMAIL_FINDS[jtbd ?? ""];
+  const body = found
+    ? `I'll read the last 30 days and list ${found}. I draft the follow-up. You send it. Nothing goes out on its own.`
+    : "I'll read the last 30 days and list the client replies you're behind on. I draft them. You send them. Nothing goes out on its own.";
+
+  return { title: "Connect Gmail", body, button: "Connect Gmail" };
+};
+
+export const consentLines = (tool: Tool): readonly string[] => {
+  const noun = tool.slug === "calendar" ? "meetings" : tool.slug === "gmail" ? "mail" : "items";
+  return [
+    `Read the last 30 days of ${noun} to find commitments`,
+    "Save drafts for you to approve",
+    "Nothing is sent, deleted, or shared",
+  ];
+};
+
 export const FOUND_COMMITMENTS = [
   {
     title: "Send Tom the invoice for June",
