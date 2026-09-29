@@ -3,10 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { SOCIAL_PROVIDERS } from "@/lib/content";
 import { SIGNUP_HEADLINE, useVariant } from "@/lib/experiments";
+import { durationBucket, recordOnce } from "@/lib/funnel-events";
+import { recordBusinessEvent } from "@/lib/metrics";
 import { useSession } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,8 +25,41 @@ export function AuthScreen({ intent }: Readonly<{ intent: "login" | "signup" }>)
   const { update } = useSession();
   const [email, setEmail] = useState("");
   const headline = useVariant(SIGNUP_HEADLINE);
+  const started = useRef(Date.now());
+  const finished = useRef(false);
+  const lastAction = useRef("none");
+  const viewed = useRef(false);
+
+  useEffect(() => {
+    if (!viewed.current) {
+      viewed.current = true;
+      started.current = Date.now();
+      recordBusinessEvent("signup.viewed", { intent });
+    }
+
+    const onPageHide = () => {
+      if (finished.current) return;
+      finished.current = true;
+      recordBusinessEvent("signup.left", {
+        intent,
+        duration_bucket: durationBucket(Date.now() - started.current),
+        last_action: lastAction.current,
+      });
+    };
+
+    window.addEventListener("pagehide", onPageHide);
+    return () => window.removeEventListener("pagehide", onPageHide);
+  }, [intent]);
 
   function signIn(provider: string, address: string) {
+    if (!finished.current) {
+      finished.current = true;
+      recordBusinessEvent("signup.completed", {
+        intent,
+        provider,
+        duration_bucket: durationBucket(Date.now() - started.current),
+      });
+    }
     update({ signedIn: true, provider, email: address });
     router.push("/welcome");
   }
@@ -59,7 +94,10 @@ export function AuthScreen({ intent }: Readonly<{ intent: "login" | "signup" }>)
               key={provider.id}
               variant="outline"
               size="lg"
-              onClick={() => signIn(provider.id, DEMO_EMAIL)}
+              onClick={() => {
+                lastAction.current = "provider_clicked";
+                signIn(provider.id, DEMO_EMAIL);
+              }}
               className="w-full justify-start"
             >
               <img src={provider.iconSrc} alt="" className="size-4 object-contain" />
@@ -83,7 +121,14 @@ export function AuthScreen({ intent }: Readonly<{ intent: "login" | "signup" }>)
             <Input
               type="email"
               value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(event) => {
+                const next = event.target.value;
+                if (email === "" && next !== "") {
+                  lastAction.current = "email_typed";
+                  recordOnce(`signup.email_started.${intent}`, "signup.email_started", { intent });
+                }
+                setEmail(next);
+              }}
               placeholder="you@company.com"
               aria-label="Work email"
             />
@@ -95,7 +140,13 @@ export function AuthScreen({ intent }: Readonly<{ intent: "login" | "signup" }>)
 
         <p className="text-muted-foreground text-center text-xs">
           {intent === "signup" ? "Already have an account? " : "New here? "}
-          <Link href={`/${other}`} className="underline underline-offset-2">
+          <Link
+            href={`/${other}`}
+            className="underline underline-offset-2"
+            onClick={() =>
+              recordBusinessEvent("signup.door_switched", { from: intent, to: other })
+            }
+          >
             {other === "login" ? "Sign in" : "Create one"}
           </Link>
         </p>

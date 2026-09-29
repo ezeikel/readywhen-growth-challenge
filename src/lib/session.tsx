@@ -27,6 +27,8 @@ export interface Session {
   jtbd: string | null;
   jtbdDetail: string;
   connected: string[];
+  /** When the first source connected, so the board event can report the gap. */
+  firstConnectedAt: number | null;
   /** The three things the user tells the Brain themselves. */
   context: Record<string, string>;
   brainSeen: boolean;
@@ -44,6 +46,7 @@ export const EMPTY_SESSION: Session = {
   jtbd: null,
   jtbdDetail: "",
   connected: [],
+  firstConnectedAt: null,
   context: {},
   brainSeen: false,
 };
