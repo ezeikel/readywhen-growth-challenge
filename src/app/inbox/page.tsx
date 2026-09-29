@@ -25,9 +25,20 @@ export default function InboxPage() {
       router.replace("/chat");
       return;
     }
+    let via = "sidebar";
+    try {
+      const stored = window.sessionStorage.getItem("rwgc.inbox_via");
+      if (stored) {
+        via = stored;
+        window.sessionStorage.removeItem("rwgc.inbox_via");
+      }
+    } catch {
+      // private mode: count the view, leave via as sidebar
+    }
     recordOnce("inbox.viewed", "inbox.viewed", {
       connected_count: session.connected.length,
       since_connect_bucket: sinceConnectBucket(session.firstConnectedAt),
+      via,
     });
   }, [ready, session, router]);
 
