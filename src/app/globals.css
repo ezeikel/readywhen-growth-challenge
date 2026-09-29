@@ -1,0 +1,182 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Tokens, radius scale, palette and keyframes are lifted from the product app
+   (apps/platform/src/app/globals.css) so this mock renders in the real design
+   system rather than a lookalike. Trimmed to what these five screens use. */
+@theme inline {
+  --font-sans: var(--font-geist), system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-season-mix), Georgia, serif;
+  --font-season: var(--font-season-mix), Georgia, serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-surface-inverse: var(--surface-inverse);
+  --color-surface-inverse-foreground: var(--surface-inverse-foreground);
+  --color-surface-inverse-accent: var(--surface-inverse-accent);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+}
+
+:root {
+  /* 4px `rounded-sm` · 8px `rounded-lg` · 12px `rounded-xl` · full. */
+  --radius: 0.5rem;
+
+  /* readywhen brand palette, light mode. Neutral canvas, brand green as the
+     accent and the deep-green ink — never the surfaces. */
+  --background: #f8f8f8;
+  --foreground: #232c27;
+  --card: #ffffff;
+  --card-foreground: #232c27;
+  --popover: #ffffff;
+  --popover-foreground: #232c27;
+  --primary: #232c27;
+  --primary-foreground: #f8f8f8;
+  --secondary: #f1f1f1;
+  --secondary-foreground: #232c27;
+  --muted: #f1f1f1;
+  --muted-foreground: oklch(0.45 0 0);
+  --accent: #f1f1f1;
+  --accent-foreground: #232c27;
+  --brand: #1f7d38;
+  --brand-foreground: #ffffff;
+  --destructive: #c9372d;
+  --destructive-foreground: #f8f8f8;
+  --success: var(--brand);
+  --success-foreground: var(--brand-foreground);
+  --warning: #c56a21;
+  --warning-foreground: #2a1c0e;
+  --border: oklch(0.9 0 0);
+  /* Stays dark in both themes, which is what lets the mint accent hold on it. */
+  --surface-inverse: #232c27;
+  --surface-inverse-foreground: #f3f7f3;
+  --surface-inverse-accent: #acffb6;
+  --input: oklch(0.9 0 0);
+  --ring: oklch(0.55 0 0);
+  --sidebar: #f8f8f8;
+  --sidebar-foreground: #232c27;
+  --sidebar-accent: #f1f1f1;
+  --sidebar-accent-foreground: #232c27;
+  --sidebar-border: oklch(0.9 0 0);
+}
+
+.dark {
+  --background: #232c27;
+  --foreground: #f3f7f3;
+  --card: #28332d;
+  --card-foreground: #f3f7f3;
+  --popover: #28332d;
+  --popover-foreground: #f3f7f3;
+  --primary: #f3f7f3;
+  --primary-foreground: #232c27;
+  --secondary: #28332d;
+  --secondary-foreground: #f3f7f3;
+  --muted: #28332d;
+  --muted-foreground: oklch(0.72 0.02 155);
+  --accent: #28332d;
+  --accent-foreground: #f3f7f3;
+  --brand: #acffb6;
+  --brand-foreground: #232c27;
+  --destructive: #e5685f;
+  --destructive-foreground: #232c27;
+  --warning: #e0883f;
+  --border: oklch(1 0.01 155 / 12%);
+  --surface-inverse: #28332d;
+  --input: oklch(1 0.01 155 / 15%);
+  --ring: oklch(0.65 0 0);
+  --sidebar: #1e2722;
+  --sidebar-foreground: #f3f7f3;
+  --sidebar-accent: #28332d;
+  --sidebar-accent-foreground: #f3f7f3;
+  --sidebar-border: oklch(1 0.01 155 / 10%);
+}
+
+@keyframes pulse-subtle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+  40%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+.animate-shake {
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Reduced motion is the default guard, not a per-component opt-in. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
