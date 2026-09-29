@@ -33,6 +33,9 @@ export function StartOver() {
       onClick={() => {
         reset();
         resetFunnelMemory();
+        try {
+          window.sessionStorage.removeItem("rwgc.inbox_via");
+        } catch {}
         router.push("/signup");
       }}
       className="bg-surface-inverse text-surface-inverse-foreground fixed right-4 bottom-20 z-60 flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-medium shadow-lg ring-1 ring-black/10 transition hover:opacity-90 md:right-5 md:bottom-5"

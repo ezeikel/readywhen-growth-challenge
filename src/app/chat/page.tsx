@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUp, Check, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowUp, Check, Sparkles } from "lucide-react";
 
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -26,13 +26,14 @@ import { useSession } from "@/lib/session";
 
 /** Said once, the first time a source is connected. */
 const UNLOCK_MESSAGE =
-  "Your board and your 2nd Brain are open now — both are in the sidebar. The board is everything I'm tracking; the Brain is what I'm working out about your business.";
+  "These are on your board now. Open it and work down the list. The 2nd Brain stays in the sidebar for when you want it.";
 
 type Message =
   | { kind: "agent" | "user"; text: string }
   | { kind: "connect" }
   | { kind: "commitments" }
-  | { kind: "draft" };
+  | { kind: "draft" }
+  | { kind: "board" };
 
 export default function ChatPage() {
   const router = useRouter();
@@ -128,7 +129,7 @@ export default function ChatPage() {
         { kind: "commitments" },
       );
       if (first) {
-        setTimeout(() => say({ kind: "agent", text: UNLOCK_MESSAGE }), 900);
+        setTimeout(() => say({ kind: "agent", text: UNLOCK_MESSAGE }, { kind: "board" }), 900);
       }
     }, 1100);
   }
@@ -189,6 +190,17 @@ export default function ChatPage() {
                   />
                 )}
                 {message.kind === "commitments" && <CommitmentsCard onAsk={send} />}
+                {message.kind === "board" && (
+                  <BoardCta
+                    onOpen={() => {
+                      recordBusinessEvent("inbox.opened_from_chat");
+                      try {
+                        window.sessionStorage.setItem("rwgc.inbox_via", "chat_cta");
+                      } catch {}
+                      router.push("/inbox");
+                    }}
+                  />
+                )}
                 {message.kind === "draft" && (
                   <DraftCard
                     sent={sent}
@@ -341,6 +353,17 @@ function ConnectCard({
           Use a different tool
         </button>
       )}
+    </div>
+  );
+}
+
+function BoardCta({ onOpen }: Readonly<{ onOpen: () => void }>) {
+  return (
+    <div className={AGENT_INDENT}>
+      <Button type="button" variant="brand" onClick={onOpen} className="group">
+        Open your board
+        <ArrowRight className="transition-transform group-hover:translate-x-0.5" aria-hidden />
+      </Button>
     </div>
   );
 }
