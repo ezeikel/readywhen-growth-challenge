@@ -37,6 +37,6 @@ On top of `a125d79` Initialise repository:
 4. `1ce7b14` Task 2: Board step 75% → 86% by making the board the next click
 5. `98d9bfd` Task 2: Name + survey 85% → 92% by dropping fields that block the first session
 6. `5f767f1` Task 3: Experiment with promise-first, value on the board before Gmail
-7. The commit that adds this file and `WRITTEN-ANSWERS.md`
+7. `e5ec797` Add written answers and submission notes (`WRITTEN-ANSWERS.md`, this file)
 
 If this history arrives through a pull request, merge it with a merge commit, or rebase it onto `main`. Do not squash. Squashing collapses the three Task 2 changes into one diff, and the brief was to read each change on its own.
