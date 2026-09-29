@@ -208,6 +208,50 @@ export const CONNECTORS: readonly Tool[] = WORK_TOOLS.filter((tool) =>
   ["gmail", "slack", "calendar", "notion"].includes(tool.slug),
 );
 
+/**
+ * One source, not a menu. A founder lives in email. Calendar only when the
+ * pain they just named was a meeting they are stuck behind.
+ */
+export const recommendedConnector = (jtbd: string | null): Tool => {
+  const slug = jtbd === "work-stuck-waiting-on-someone" ? "calendar" : "gmail";
+  return CONNECTORS.find((tool) => tool.slug === slug) ?? CONNECTORS[0];
+};
+
+export const connectAsk = (
+  tool: Tool,
+  jtbd: string | null,
+): { title: string; body: string; button: string } => {
+  if (tool.slug === "calendar") {
+    return {
+      title: "Connect Calendar",
+      body: "I'll read the last 30 days of meetings and list what you said you'd do on them. I draft the follow-up. You send it. Nothing goes out on its own.",
+      button: "Connect Calendar",
+    };
+  }
+
+  const body =
+    jtbd === "no-time-to-chase-new-business"
+      ? "I'll read the last 30 days and list the leads that have gone quiet. I draft the follow-up. You send it. Nothing goes out on its own."
+      : jtbd === "things-fall-through-cracks"
+        ? "I'll read the last 30 days and list the commitments you haven't closed. I draft the follow-up. You send it. Nothing goes out on its own."
+        : jtbd === "juggling-multiple-businesses"
+          ? "I'll read the last 30 days and list what you still owe across the businesses. I draft the follow-up. You send it. Nothing goes out on its own."
+          : "I'll read the last 30 days and list the client replies you're behind on. I draft them. You send them. Nothing goes out on its own.";
+
+  return { title: "Connect Gmail", body, button: "Connect Gmail" };
+};
+
+/** What the consent dialog is allowed to claim. The third line is the limit. */
+export const consentLines = (tool: Tool): readonly string[] => {
+  const noun =
+    tool.slug === "calendar" ? "meetings" : tool.slug === "gmail" ? "mail" : "items";
+  return [
+    `Read the last 30 days of ${noun} to find commitments`,
+    "Save drafts for you to approve",
+    "Nothing is sent, deleted, or shared",
+  ];
+};
+
 export const FOUND_COMMITMENTS = [
   {
     title: "Send Tom the invoice for June",
