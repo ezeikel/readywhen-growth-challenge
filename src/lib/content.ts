@@ -10,52 +10,19 @@ export const SOCIAL_PROVIDERS = [
   { id: "microsoft", label: "Continue with Microsoft", iconSrc: "/icons/outlook.svg" },
 ] as const;
 
-// ── Step 2: the sign-up survey ─────────────────────────────────────────────
+// ── Step 2: name, plus the one survey question the first session can use.
+// Headcount, department and referral blocked Continue and none of them change
+// what the board shows. Ask them after someone has reached it.
 export const SURVEY_FIELDS = [
-  {
-    key: "headcount",
-    label: "Company headcount",
-    options: ["1–10", "11–50", "51–200", "201–500", "501–1,000", "1,001–5,000", "5,000+"],
-  },
   {
     key: "role",
     label: "Your role",
     options: [
-      "Individual contributor",
-      "Freelancer",
       "Solo business owner",
-      "Executive",
+      "Freelancer",
+      "Individual contributor",
       "Manager",
-      "Other",
-    ],
-  },
-  {
-    key: "department",
-    label: "Department",
-    options: [
       "Executive",
-      "Revenue",
-      "Operations",
-      "Product",
-      "Marketing",
-      "Sales",
-      "Customer Success",
-      "People/HR",
-      "Finance",
-      "IT",
-      "Other",
-    ],
-  },
-  {
-    key: "referral",
-    label: "How did you hear about us?",
-    options: [
-      "Friend or colleague",
-      "Social media",
-      "Online search",
-      "AI search",
-      "Newsletter or community",
-      "Podcast or event",
       "Other",
     ],
   },
