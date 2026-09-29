@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { RotateCcw } from "lucide-react";
 
+import { resetExperimentMemory } from "@/lib/experiments";
 import { resetFunnelMemory } from "@/lib/funnel-events";
 import { useSession } from "@/lib/session";
 
@@ -33,6 +34,7 @@ export function StartOver() {
       onClick={() => {
         reset();
         resetFunnelMemory();
+        resetExperimentMemory();
         try {
           window.sessionStorage.removeItem("rwgc.inbox_via");
         } catch {

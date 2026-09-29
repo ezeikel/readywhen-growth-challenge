@@ -26,6 +26,8 @@ export interface Session {
   tools: string[];
   jtbd: string | null;
   jtbdDetail: string;
+  /** One promise they typed themselves, on the promise-first arm. */
+  ownPromise: string;
   connected: string[];
   /** When the first source connected, so the board event can report the gap. */
   firstConnectedAt: number | null;
@@ -45,6 +47,7 @@ export const EMPTY_SESSION: Session = {
   tools: [],
   jtbd: null,
   jtbdDetail: "",
+  ownPromise: "",
   connected: [],
   firstConnectedAt: null,
   context: {},

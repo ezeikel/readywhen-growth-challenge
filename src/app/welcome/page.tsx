@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { AppShell, OnboardingCard } from "@/components/AppShell";
+import { FIRST_SESSION, useExperiment } from "@/lib/experiments";
 import { useSession } from "@/lib/session";
 import { ExplainerStep, OrgNameStep, ProfileStep, SlipsStep, ToolsStep } from "./steps";
 
@@ -18,14 +19,17 @@ type Step = (typeof STEPS)[number];
 export default function WelcomePage() {
   const router = useRouter();
   const { session, ready, update } = useSession();
+  const { variant, ready: armReady } = useExperiment(FIRST_SESSION);
   const [step, setStep] = useState<Step>("org");
   const [other, setOther] = useState("");
 
   useEffect(() => {
-    if (ready && !session.signedIn) router.replace("/signup");
-  }, [ready, session.signedIn, router]);
+    if (!ready || !armReady) return;
+    if (!session.signedIn) router.replace("/signup");
+    else if (variant === "promise-first") router.replace("/start");
+  }, [ready, armReady, session.signedIn, variant, router]);
 
-  if (!ready || !session.signedIn) return null;
+  if (!ready || !armReady || !session.signedIn || variant === "promise-first") return null;
 
   const next = () => setStep(STEPS[STEPS.indexOf(step) + 1]);
   const back = () => setStep(STEPS[STEPS.indexOf(step) - 1]);

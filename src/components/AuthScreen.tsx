@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { SOCIAL_PROVIDERS } from "@/lib/content";
-import { SIGNUP_HEADLINE, useVariant } from "@/lib/experiments";
+import { FIRST_SESSION, useExperiment } from "@/lib/experiments";
 import { durationBucket, recordOnce } from "@/lib/funnel-events";
 import { recordBusinessEvent } from "@/lib/metrics";
 import { useSession } from "@/lib/session";
@@ -24,7 +24,7 @@ export function AuthScreen({ intent }: Readonly<{ intent: "login" | "signup" }>)
   const router = useRouter();
   const { update } = useSession();
   const [email, setEmail] = useState("");
-  const headline = useVariant(SIGNUP_HEADLINE);
+  const { variant, ready: armReady } = useExperiment(FIRST_SESSION);
   const started = useRef(Date.now());
   const finished = useRef(false);
   const lastAction = useRef("none");
@@ -61,7 +61,7 @@ export function AuthScreen({ intent }: Readonly<{ intent: "login" | "signup" }>)
       });
     }
     update({ signedIn: true, provider, email: address });
-    router.push("/welcome");
+    router.push(variant === "promise-first" ? "/start" : "/welcome");
   }
 
   const other = intent === "signup" ? "login" : "signup";
@@ -82,11 +82,7 @@ export function AuthScreen({ intent }: Readonly<{ intent: "login" | "signup" }>)
 
         <div className="bg-card flex flex-col gap-4 rounded-xl border p-6 shadow-xs">
           <h1 className="text-center text-base font-semibold">
-            {intent === "login"
-              ? "Welcome back"
-              : headline === "direct"
-                ? "Start catching what you said you'd do"
-                : "Create your account"}
+            {intent === "login" ? "Welcome back" : "Create your account"}
           </h1>
 
           {SOCIAL_PROVIDERS.map((provider) => (
@@ -98,6 +94,7 @@ export function AuthScreen({ intent }: Readonly<{ intent: "login" | "signup" }>)
                 lastAction.current = "provider_clicked";
                 signIn(provider.id, DEMO_EMAIL);
               }}
+              disabled={!armReady}
               className="w-full justify-start"
             >
               <img src={provider.iconSrc} alt="" className="size-4 object-contain" />
@@ -132,7 +129,7 @@ export function AuthScreen({ intent }: Readonly<{ intent: "login" | "signup" }>)
               placeholder="you@company.com"
               aria-label="Work email"
             />
-            <Button type="submit" size="lg" className="w-full">
+            <Button type="submit" size="lg" className="w-full" disabled={!armReady}>
               Continue with email
             </Button>
           </form>

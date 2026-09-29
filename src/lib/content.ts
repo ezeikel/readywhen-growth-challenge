@@ -243,6 +243,10 @@ export const FOUND_COMMITMENTS = [
   },
 ];
 
+/** A draft from the sentence they typed. A template, not a model. */
+export const promiseDraft = (promise: string): string =>
+  `Hi.\n\nI said I'd do this, and I haven't yet:\n\n${promise.trim()}\n\nI'll send it across shortly.\n\nBest,`;
+
 export const DRAFT_REPLY = {
   to: "Tom Blake",
   subject: "Re: June invoice",
