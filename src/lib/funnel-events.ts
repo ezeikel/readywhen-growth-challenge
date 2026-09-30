@@ -60,6 +60,16 @@ export const useStepTiming = (step: string) => {
     return () => window.removeEventListener("pagehide", onPageHide);
   }, [step]);
 
+  const leave = useCallback(() => {
+    if (finished.current) return;
+    finished.current = true;
+    recordBusinessEvent("welcome.step_left", {
+      step,
+      duration_bucket: durationBucket(Date.now() - started.current),
+      last_action: lastAction.current,
+    });
+  }, [step]);
+
   const mark = useCallback((action: string) => {
     lastAction.current = action;
   }, []);
@@ -77,5 +87,5 @@ export const useStepTiming = (step: string) => {
     [step],
   );
 
-  return { mark, complete };
+  return { mark, complete, leave };
 };

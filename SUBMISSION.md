@@ -2,7 +2,7 @@
 
 Ezeikel Pemberton. Growth challenge for readywhen.
 
-Read the commits in order. Each task is its own commit. Task 2 is three commits, one change each. The write-ups are `reports/task-2.md`, `reports/task-3.md` and `WRITTEN-ANSWERS.md`.
+Read the commits in order. Each task is its own commit. Task 2 is three commits, one change each. The write-ups are `reports/task-2.md`, `reports/task-3.md` and `WRITTEN-ANSWERS.md`. Local checks and the mock measurement boundary are in `reports/validation.md`.
 
 `data/funnel.md` has connect at 30%. The written-answer sheet says 45%. `WRITTEN-ANSWERS.md` says which figure each answer uses. Tasks 1 to 3 use 30%.
 
@@ -39,3 +39,5 @@ Sign-up accepts any email, or Continue with Google or Microsoft. Nothing leaves 
 6. `6854db8` Task 2: Name + survey 85% to 92% by dropping fields that block the first session
 7. `d2b45fd` Task 3: Experiment with promise-first, value on the board before Gmail
 8. Add written answers and submission notes (`WRITTEN-ANSWERS.md`, this file)
+
+A final review commit corrects the forecast explanation and experiment decision rules, records Back-step timing, keeps the role picker controlled, and adds validation notes. The original task commits above remain in order.

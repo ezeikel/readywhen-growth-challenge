@@ -128,7 +128,7 @@ function SelectScrollDownButton({
 
 /**
  * The labelled single-select the sign-up survey uses. Empty value shows the
- * placeholder — Radix treats `""` as "no value", so it is passed as undefined.
+ * placeholder — Radix treats `""` as "no value"; keep it controlled from the first render.
  */
 export function SurveySelect({
   value,
@@ -146,7 +146,7 @@ export function SurveySelect({
   return (
     <label className="flex flex-col gap-2">
       <span className="text-foreground text-sm font-medium">{label}</span>
-      <Select value={value || undefined} onValueChange={onChange}>
+      <Select value={value} onValueChange={onChange}>
         <SelectTrigger aria-label={label} className="h-11">
           <SelectValue placeholder={<span>{placeholder}</span>} />
         </SelectTrigger>

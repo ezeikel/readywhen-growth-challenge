@@ -1,6 +1,6 @@
 # Written answers
 
-Short on purpose. The figures in Tasks 1 to 3 use `data/funnel.md`, where connect is 30% of the people who reach it. The sheet for these questions says 45%. Both cannot be true: 30% is what multiplies out to the funnel's own "20% of sign-ups connect, 15% reach the board". I flag the mismatch on every answer that uses the step, and I say which figure I am on.
+Short on purpose. The figures in Tasks 1 to 3 use `data/funnel.md`, where connect is 30% of the people who reach it. The sheet for these questions says 45%. These are different supplied baselines; for the same cohort and step definition they disagree: 30% is what multiplies out to the funnel's own "20% of sign-ups connect, 15% reach the board". I flag the mismatch on every answer that uses the step, and I say which figure I am on.
 
 Session 1, wherever I use it: starts at `signup.completed`, ends after 30 minutes with no further event from that browser.
 
@@ -8,7 +8,7 @@ Session 1, wherever I use it: starts at `signup.completed`, ends after 30 minute
 
 Activation metric: `inbox.viewed` with `connected_count` at least 1, during session 1.
 
-That is the North Star as an event pair, not a feeling. The board is where a commitment from their own source is actually on screen. `promise.board_previewed` does not count. Neither does a board view with nothing connected.
+That is the North Star as an event pair, not a feeling. The intended value moment is seeing commitments from their connected source on the board. This mock uses seeded commitments, so it demonstrates the flow rather than proving source-derived value. `promise.board_previewed` does not count. Neither does a board view with nothing connected.
 
 Hypothesis, not a result: if a user connects a source and lands on the board in session 1, they are 3× more likely to emit any product event in the 7 days after that session than a user who signed up and did not.
 
@@ -20,7 +20,7 @@ Check before building anything else. Split sign-ups into those two groups on the
 
 45% is bad for this product. The board is empty without a source, so the step is the product, and most people who reach it leave. It is not obviously bad against a generic optional-integration range.
 
-Benchmark: Userpilot's 2024 figure, median activation 37% of sign-ups across about 62 B2B companies. I have not re-analysed their sample. Trust: medium as "what share of sign-ups reach some activation", low as a benchmark for this step. Their activation is looser than granting a mailbox, and it is end to end, not a step rate. On the funnel, 15% of sign-ups reach the board. That is the comparison I would actually worry about, with low-to-medium trust because the definitions differ.
+Benchmark: [Userpilot's product metrics report](https://userpilot.com/saas-product-metrics/) reports median activation 37.04% and average 37.5% of sign-ups across 62 B2B SaaS companies. I have not re-analysed their sample. Trust: medium as "what share of sign-ups reach some activation", low as a benchmark for this step. Their activation is looser than granting a mailbox, and it is end to end, not a step rate. On the funnel, 15% of sign-ups reach the board. That is the comparison I would actually worry about, with low-to-medium trust because the definitions differ.
 
 The other number I would plan with is my own rule, not a study: a connection the product cannot work without should clear 60% of the people who reach it, and an optional one can sit between 30% and 50%. Trust: low.
 
@@ -90,10 +90,10 @@ When I do run it: after the first source has put commitments on the board, ask f
 
 Hypothesis: that ask raises the share of session-1 connectors who connect a second source before the session ends.
 
-Metric: among users with `connector.connected` and `is_first=1` in session 1, the share with `connected_count` at least 2 before the session ends.
+Metric: among assigned eligible users who connected their first source and reached the board in session 1, the share with `connected_count` at least 2 before that session ends.
 
-Guardrail: the session-1 North Star, connect and board, does not fall by more than 3 points. A second permission dialog can push people off the board.
+Randomise eligible first-source users 50/50 to the ask or the existing experience. Analyse by assignment, including users who ignore the ask. The primary metric above tests whether the prompt increases second connections. The guardrail is 7-day return among all assigned eligible users, with a maximum tolerated decline of 3 percentage points; the North Star has already been reached before this prompt, so it cannot diagnose harm caused afterwards.
 
-A positive result tells me the second ask, placed after they have seen a commitment, creates a second source. I would ship the Calendar ask. I would not add a third source in the same session until 7-day return for the two-source group is at least as high as for the one-source group.
+Also compare 7-day return between the assigned arms. More second connections alone does not establish that more sources cause retention. A clear connection lift with no material retention loss supports shipping the ask; a retention lift as well supports the causal product hypothesis, subject to the prompt potentially affecting return directly. At this volume, a wide retention interval means we need more evidence, not that retention is unchanged.
 
-A negative result tells me prompting does not create the desire. People who want a second source already connect it. I would stop adding connect prompts in session 1. The correlation in the question is then more likely the confounder in (1) than a missing button, and the next sprint goes to the quality of what the first source puts on the board.
+No clear connection lift means this particular prompt or timing did not persuade users. It does not prove the correlation is confounded or that no one wants a second source. I would inspect refusal reasons and the uncertainty before choosing a different prompt or returning focus to the first-source experience.

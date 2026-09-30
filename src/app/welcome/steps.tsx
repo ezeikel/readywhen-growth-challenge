@@ -517,6 +517,7 @@ export function ToolsStep({
 
       <Footer
         onBack={() => {
+          timing.leave();
           recordBusinessEvent("welcome.step_back", { step: "tools" });
           onBack();
         }}
@@ -637,6 +638,7 @@ export function SlipsStep({
 
       <Footer
         onBack={() => {
+          timing.leave();
           recordBusinessEvent("welcome.step_back", { step: "slips" });
           onBack();
         }}

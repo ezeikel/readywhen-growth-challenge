@@ -4,7 +4,7 @@
 
 A founder of a 1 to 10 person service business does not feel the product when they name their company and pick tools. They feel it when they see a promise they already made to a client, and a draft of the reply. The control, after Task 2, still interviews them and only then asks for one source. I think that order is the thing in the way.
 
-The arm is `promise-first`. After sign-up they get one question: what did you last tell a client you'd do? That sentence goes on the board, with a draft, and only then do we ask for Gmail (Calendar if they choose it). There is no org name, no role, no explainer, no tools grid, no "what is slowing you down".
+The arm is `promise-first`. After sign-up they get one question: what did you last tell a client you'd do? That sentence goes on the board, with a draft preview, and only then do we ask for Gmail (Calendar if they choose it). The demo draft is a fixed template, not a generated reply. This tests the proposed order of the experience; proving useful, accurate drafts would need real source data and user research. There is no org name, no role, no explainer, no tools grid, no "what is slowing you down".
 
 `?first-session=promise-first` on `/signup`. `?first-session=control`, or no parameter, is the Task 2 funnel. The choice sticks for the tab. Start over clears it.
 
@@ -32,7 +32,7 @@ Read at the same time as the primary metric.
 
 1. Sign-up to first connect, whether or not they reach the board, stays within 5 points of the control. The Task 2 chain puts that control rate at 0.92 × 0.80 × 0.95 × 0.38 = 26.6% of sign-ups, so the floor is about 22%. The primary metric can still rise when almost everyone who connects also reaches the board, even if fewer people connect. This guardrail stops me calling that a win.
 
-2. Among people who hit the primary metric, the share who emit any product event in the next 7 days is not more than 5 points below the control. I do not know today's return rate. The guardrail is the gap. If we drag people onto the board and they never come back, the North Star moved and the product did not.
+2. Among all sign-ups assigned to each arm, the share who emit any product event in the 7 days after session 1 is not more than 5 points below the control. Keeping the denominator as all assigned sign-ups avoids comparing different groups of activated users created by the treatment. I do not know today's return rate. The guardrail is the gap. If we drag people onto the board and they never come back, the North Star moved and the product did not.
 
 I would also read `start.left` and its `last_action`, and `connector.consent_cancelled` on `surface=start`. Those explain a loss. They are not a second success metric.
 
@@ -54,14 +54,23 @@ n = 7.84 × (0.1763 + 0.2133) / 0.0064 = 477 per arm
 
 The same 8 point gap is a bit cheaper if control is lower, because p(1 − p) is smaller away from 50%: about 443 an arm at a 20% control, about 365 at today's 14.5%. Four weeks still covers those. The duration is not sensitive to me being wrong about 23%.
 
-What 4 weeks cannot see: a 5 point lift (23% to 28%, about 12 extra board arrivals a week) needs about 1,180 an arm, **about 10 weeks**. At 500 an arm the smallest gap this test can reliably call, using 2 × p(1 − p) at p = 0.23, is about 7.5 points. I set the win line at 8 because that is the lift the test can actually see. I will not call a smaller gap a win at week 4.
+This sample gives approximately 80% power to reject a zero lift if the true lift is 8 points. It does not give an 80% chance of clearing the separate commercial threshold of an observed +8 points: if the true lift is exactly 8, the estimate clears that threshold only about half the time. The commercial threshold is a judgement about value, separate from statistical detection.
 
-If the point estimate at week 4 is between +4 and +8 and the interval includes 0, I extend to 8 weeks. A 5 point gap is worth about 12 people a week on the board, and killing it at the minimum detectable effect would throw that away. If the point estimate is 0 or worse at week 4, I stop.
+What 4 weeks cannot see: a 5 point lift (23% to 28%, about 12 extra board arrivals a week) needs about 1,180 an arm, **about 10 weeks**. At 500 an arm the smallest gap this test can reliably call, using 2 × p(1 − p) at p = 0.23, is about 7.5 points. I set the commercial win line at 8 because it adds about 20 activated users a week at this volume. I will not call a smaller gap a win at week 4.
 
-A peek at week 2 is not a stopping rule. The exception: if sign-up to connect is already about 10 points or more below the control, I stop. At 250 an arm that is about as small a hole as two weeks can show (the minimum detectable gap near a 25% rate is about 11 points). I would not stop for a 3 point dip.
+Pre-register four weeks of enrolment and make one final read after every participant has had their 7-day follow-up, around week 5. No extending the test because the observed result is promising: that would make the ordinary 95% interval unreliable.
+
+At that final read:
+
+- At least +8 points, interval excludes 0, and both guardrails pass: ship the arm.
+- Positive but below +8, even if statistically significant: below the pre-set commercial target; keep control and reassess whether a smaller lift merits a separately planned experiment.
+- Interval includes 0: inconclusive at this volume; keep control. Do not call it evidence of no effect. Any follow-up gets a new sample-size calculation and decision rule.
+- At or below 0, or a guardrail fails: keep control and diagnose the result.
+
+Monitor technical failures and substantial harm during the run. At week 2, a connect-rate drop of about 10 points or more triggers a safety review and can stop rollout. This is a harm rule, not an early success test; a stopped run is not declared a win.
 
 ## If it loses
 
-Point estimate at or under 0 at week 4: ship nothing from the arm. Keep the Task 2 funnel.
+Point estimate at or under 0 at the final read: ship nothing from the arm. Keep the Task 2 funnel.
 
 Then I read `start.left`. If `last_action` is mostly `ask`, the empty box was the wall, and one softer prompt is worth a second try. If it is mostly `board` or `consent_cancelled`, they saw the draft and refused the mailbox. Deleting more screens will not fix that. The next experiment is the permission: Calendar only, or they forward one thread, instead of granting a mailbox to a product they opened ten minutes ago.

@@ -32,7 +32,7 @@ The chat offered Gmail, Slack, Calendar and Notion as equals, then a consent dia
 
 The screen now asks for one source. Gmail, unless they said work is stuck waiting on someone else, in which case Calendar. The sentence matches the pain they just picked. The consent screen states the limit: the last 30 days, drafts they approve, nothing sent, deleted or shared. The other tools sit behind "Use a different tool".
 
-38% is 8 of the 70 points who leave, roughly a quarter of them. That is the group I think stall on a four-way choice or on a scope list with no limit. It leaves the people who will not grant a mailbox to a product they have just met. If `connector.consent_cancelled` is most of the drop, 8 points is too high, and the next job is the permission itself.
+Moving from 30% to 38% recovers 8 of the 70 percentage points currently lost, about 11% of abandoners. That is the group I think stall on a four-way choice or on a scope list with no limit. It leaves the people who will not grant a mailbox to a product they have just met. If `connector.consent_cancelled` is most of the drop, 8 points is too high, and the next job is the permission itself.
 
 On its own: 36.3 board arrivals a week becomes 46.0, **plus 9.7**.
 
